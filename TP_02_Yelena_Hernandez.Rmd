@@ -1,0 +1,108 @@
+---
+title: "Tarea Programada 02"
+author: "Yelena Hernandez - Carné: C33676"
+date: "2026-06-09"
+output: html_document
+---
+
+## Carga, exploración y calidad de datos
+```{r setup, include = FALSE}
+#Librerias utilizadas
+
+library(nycflights13)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+
+```
+
+### 1. Cargar los paquetes requeridos y las tablas flights, airlines, airports, planes y weather.
+```{r}
+flights <- nycflights13::flights
+airlines <- nycflights13::airlines
+airports <- nycflights13::airports
+planes <- nycflights13::planes
+weather <- nycflights13::weather
+
+glimpse(flights)
+glimpse(airlines)
+glimpse(airports)
+glimpse(planes)
+glimpse(weather)
+
+head(flights)
+head(airlines)
+head(airports)
+head(planes)
+head(weather)
+```
+
+### 2. Presentar una vista paginada de las primeras 100 observaciones de flights con 10 observaciones por página. No debe incorporar la tabla completa en el HTML.
+```{r}
+flights_100 <- flights %>%
+  slice(1:100)
+```
+
+### 3. Crear una tabla resumen con el número de filas, número de columnas y tipo general de variables de cada conjunto de datos.
+```{r}
+resumen <- data.frame(
+  dataset = c("flights", "airlines", "airports", "planes", "weather"),
+  filas = c(
+    nrow(flights),
+    nrow(airlines),
+    nrow(airports),
+    nrow(planes),
+    nrow(weather)),
+  columnas = c(
+    ncol(flights),
+    ncol(airlines),
+    ncol(airports),
+    ncol(planes),
+    ncol(weather)))
+
+resumen
+```
+
+### 4. Identificar y presentar la cantidad y el porcentaje de valores faltantes en las variables principales de flights: dep_time, dep_delay, arr_time, arr_delay y tailnum.
+```{r}
+flights %>%
+  summarise(
+    dep_time_na = sum(is.na(dep_time)),
+    dep_delay_na = sum(is.na(dep_delay)),
+    arr_time_na = sum(is.na(arr_time)),
+    arr_delay_na = sum(is.na(arr_delay)),
+    tailnum_na = sum(is.na(tailnum)))
+
+
+flights %>%
+  summarise(
+    dep_time_pct = mean(is.na(dep_time)) * 100,
+    dep_delay_pct = mean(is.na(dep_delay)) * 100,
+    arr_time_pct = mean(is.na(arr_time)) * 100,
+    arr_delay_pct = mean(is.na(arr_delay)) * 100,
+    tailnum_pct = mean(is.na(tailnum)) * 100)
+
+```
+
+### 5. Crear al menos las variables derivadas fecha, cancelado y retraso_llegada, donde un vuelo se considere retrasado cuando llegue con más de 15 minutos de retraso. Debe explicar cómo trató los valores faltantes.
+```{r}
+flights2 <- flights %>%
+  mutate( fecha = as.Date( paste(year, month, day, sep = "-")
+    ))
+
+
+flights2 <- flights2 %>%
+  mutate(cancelado = is.na(dep_time))
+
+
+flights2 <- flights2 %>%
+  mutate( retraso_llegada =  if_else(
+        arr_delay > 15, TRUE, FALSE, missing = NA))
+```
+La variable fecha se construyó a partir de las variables year, month y day, las cuales no presentan valores faltantes. Para la variable cancelado, se consideró que un vuelo está cancelado cuando dep_time es NA. En la variable retraso_llegada, los vuelos con arr_delay > 15 se clasifican como retrasados. Cuando arr_delay es NA, el resultado se mantiene como NA debido a que no existe información suficiente para determinar si el vuelo llegó con retraso. Esto evita clasificar incorrectamente vuelos cancelados o con información incompleta.
+
+## Integración y preparación de datos
+
+
+
