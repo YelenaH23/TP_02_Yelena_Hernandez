@@ -1,14 +1,17 @@
 ---
 title: "Tarea Programada 02"
 author: "Yelena Hernandez - Carné: C33676"
-date: "2026-06-09"
-output: html_document
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
 ---
+
 
 ## Carga, exploración y calidad de datos
 ```{r setup, include = FALSE}
 #Librerias utilizadas
-
 library(nycflights13)
 library(dplyr)
 library(ggplot2)
@@ -18,34 +21,39 @@ library(lubridate)
 ```
 
 ### 1. Cargar los paquetes requeridos y las tablas flights, airlines, airports, planes y weather.
-```{r}
-flights <- nycflights13::flights
-airlines <- nycflights13::airlines
-airports <- nycflights13::airports
-planes <- nycflights13::planes
-weather <- nycflights13::weather
 
-glimpse(flights)
-glimpse(airlines)
-glimpse(airports)
-glimpse(planes)
-glimpse(weather)
+```{r setup, message=FALSE, warning=FALSE}
+#En el html se ve mal esteticamente
 
-head(flights)
-head(airlines)
-head(airports)
-head(planes)
-head(weather)
+flights <- flights
+airlines <- airlines
+airports <- airports
+planes <- planes
+weather <- weather
+
+dim(flights)
+dim(airlines)
+dim(airports)
+dim(planes)
+dim(weather)
+
+head(flights,4)
+head(airlines,4)
+head(airports,4)
+head(planes,4)
+head(weather,4)
 ```
 
 ### 2. Presentar una vista paginada de las primeras 100 observaciones de flights con 10 observaciones por página. No debe incorporar la tabla completa en el HTML.
-```{r}
+```{r echo=FALSE, results='asis',rows.print= 10}
 flights_100 <- flights %>%
   slice(1:100)
+
+head(flights_100,10)
 ```
 
 ### 3. Crear una tabla resumen con el número de filas, número de columnas y tipo general de variables de cada conjunto de datos.
-```{r}
+```{r echo=FALSE, results='asis'}
 resumen <- data.frame(
   dataset = c("flights", "airlines", "airports", "planes", "weather"),
   filas = c(
@@ -66,36 +74,38 @@ resumen
 
 ### 4. Identificar y presentar la cantidad y el porcentaje de valores faltantes en las variables principales de flights: dep_time, dep_delay, arr_time, arr_delay y tailnum.
 ```{r}
+
 flights %>%
   summarise(
     dep_time_na = sum(is.na(dep_time)),
+    dep_time_por = mean(is.na(dep_time)) * 100,
+    
     dep_delay_na = sum(is.na(dep_delay)),
+    dep_delay_por = mean(is.na(dep_delay)) * 100,
+    
     arr_time_na = sum(is.na(arr_time)),
+    arr_time_por = mean(is.na(arr_time)) * 100,
+    
     arr_delay_na = sum(is.na(arr_delay)),
-    tailnum_na = sum(is.na(tailnum)))
-
-
-flights %>%
-  summarise(
-    dep_time_pct = mean(is.na(dep_time)) * 100,
-    dep_delay_pct = mean(is.na(dep_delay)) * 100,
-    arr_time_pct = mean(is.na(arr_time)) * 100,
-    arr_delay_pct = mean(is.na(arr_delay)) * 100,
-    tailnum_pct = mean(is.na(tailnum)) * 100)
+    arr_delay_por = mean(is.na(arr_delay)) * 100,
+    
+    tailnum_na = sum(is.na(tailnum)),
+    tailnum_por = mean(is.na(tailnum)) * 100)
 
 ```
 
 ### 5. Crear al menos las variables derivadas fecha, cancelado y retraso_llegada, donde un vuelo se considere retrasado cuando llegue con más de 15 minutos de retraso. Debe explicar cómo trató los valores faltantes.
 ```{r}
+#Fecha
 flights2 <- flights %>%
   mutate( fecha = as.Date( paste(year, month, day, sep = "-")
     ))
 
-
+#Cancelados
 flights2 <- flights2 %>%
   mutate(cancelado = is.na(dep_time))
 
-
+#Retraso de llagada
 flights2 <- flights2 %>%
   mutate( retraso_llegada =  if_else(
         arr_delay > 15, TRUE, FALSE, missing = NA))
@@ -104,5 +114,29 @@ La variable fecha se construyó a partir de las variables year, month y day, las
 
 ## Integración y preparación de datos
 
+### 1.  Construir un objeto denominado vuelos_analisis mediante uniones que incorpore: nombre de la aerolínea, nombre del aeropuerto de destino, características de la aeronave y condiciones meteorológicas correspondientes al aeropuerto y hora de salida. 
+```{r}
+vuelos_analisis <- flights %>%
+  left_join( airlines, by = "carrier")
+```
 
+### 2.  Utilizar left_join() para conservar como base todos los registros de vuelos y justificar por qué esta unión es apropiada para el análisis. 
+```{r}
+
+```
+
+### 3.  Comprobar que las uniones no aumenten indebidamente el número de vuelos. Debe comparar la cantidad de filas antes y después de cada unión. 
+```{r}
+
+```
+
+### 4.  Cuantificar cuántos registros no encontraron correspondencia en las tablas complementarias y explicar al menos una posible causa de esos faltantes. 
+```{r}
+
+```
+
+### 5.  Construir una versión depurada de los datos para los análisis estadísticos; debe indicar claramente los filtros aplicados y no eliminar valores faltantes sin justificación. 
+```{r}
+
+```
 
