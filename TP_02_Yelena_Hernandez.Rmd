@@ -22,7 +22,7 @@ library(lubridate)
 
 ### 1. Cargar los paquetes requeridos y las tablas flights, airlines, airports, planes y weather.
 
-```{r setup, message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE}
 #En el html se ve mal esteticamente
 
 flights <- flights
@@ -44,8 +44,8 @@ head(planes,4)
 head(weather,4)
 ```
 
-### 2. Presentar una vista paginada de las primeras 100 observaciones de flights con 10 observaciones por página. No debe incorporar la tabla completa en el HTML.
-```{r echo=FALSE, results='asis',rows.print= 10}
+### 2. Vista paginada de las primeras 100 observaciones de flights con 10 observaciones por página. No debe incorporar la tabla completa en el HTML.
+```{r echo=FALSE}
 flights_100 <- flights %>%
   slice(1:100)
 
@@ -53,7 +53,7 @@ head(flights_100,10)
 ```
 
 ### 3. Crear una tabla resumen con el número de filas, número de columnas y tipo general de variables de cada conjunto de datos.
-```{r echo=FALSE, results='asis'}
+```{r echo=FALSE}
 resumen <- data.frame(
   dataset = c("flights", "airlines", "airports", "planes", "weather"),
   filas = c(
@@ -73,7 +73,7 @@ resumen
 ```
 
 ### 4. Identificar y presentar la cantidad y el porcentaje de valores faltantes en las variables principales de flights: dep_time, dep_delay, arr_time, arr_delay y tailnum.
-```{r}
+```{r echo=FALSE}
 
 flights %>%
   summarise(
@@ -97,7 +97,7 @@ flights %>%
 ### 5. Crear al menos las variables derivadas fecha, cancelado y retraso_llegada, donde un vuelo se considere retrasado cuando llegue con más de 15 minutos de retraso. Debe explicar cómo trató los valores faltantes.
 ```{r}
 #Fecha
-flights2 <- flights %>%
+flights2 <- flights_100 %>%
   mutate( fecha = as.Date( paste(year, month, day, sep = "-")
     ))
 
@@ -114,29 +114,43 @@ La variable fecha se construyó a partir de las variables year, month y day, las
 
 ## Integración y preparación de datos
 
-### 1.  Construir un objeto denominado vuelos_analisis mediante uniones que incorpore: nombre de la aerolínea, nombre del aeropuerto de destino, características de la aeronave y condiciones meteorológicas correspondientes al aeropuerto y hora de salida. 
 ```{r}
-vuelos_analisis <- flights %>%
+vuelos_analisis <- flights2 %>%
   left_join( airlines, by = "carrier")
-```
 
-### 2.  Utilizar left_join() para conservar como base todos los registros de vuelos y justificar por qué esta unión es apropiada para el análisis. 
+vuelos_analisis <- vuelos_analisis %>% 
+  left_join(weather, by = c("origin","year","month", "day", "hour"))
+
+vuelos_analisis <- vuelos_analisis %>% 
+  left_join(planes, by = "tailnum")
+```
+Al usar left_join() para hacer el objeto vuelos analisis logro unir flights con las demas tablas, obteniendo asi todos los datos de los vuelos registrados en 2013 aun cuando alguna informacion complementaria no exista.
+
 ```{r}
-
+nrow(flights2)
+nrow(vuelos_analisis)
 ```
 
-### 3.  Comprobar que las uniones no aumenten indebidamente el número de vuelos. Debe comparar la cantidad de filas antes y después de cada unión. 
+### Cuantificar cuántos registros no encontraron correspondencia en las tablas complementarias y explicar al menos una posible causa de esos faltantes. 
 ```{r}
+sum(is.na(vuelos_analisis))
+# sum(is.na(vuelos_analisis$year.y))
 
+colSums(is.na(vuelos_analisis))
 ```
+Hay un total de 313 datos faltantes lo que quiere decir que algunos vuelos no encontraron coincidencias al momento en que se hizo el left_join() como por ejemplo la columna de year.y o wind_gust. Las otras variables como speed ya tenian valores faltantes desde antes que se hiciera la union por lo que, lo mejor seria 
+eliminarla.
 
-### 4.  Cuantificar cuántos registros no encontraron correspondencia en las tablas complementarias y explicar al menos una posible causa de esos faltantes. 
+
+### Versión depurada de los datos 
 ```{r}
+vuelos_limpios <- vuelos_analisis %>% 
+  filter( !is.na(year.y), !is.na(wind_gust), !is.na(model), !is.na(engine), !is.na(engines), !is.na(type), !is.na(manufacturer)) %>% 
+  select(-speed)
 
+cat("Filas originales:", nrow(vuelos_analisis), "\n")
+cat("Filas depuradas:", nrow(vuelos_limpios), "\n")
 ```
 
-### 5.  Construir una versión depurada de los datos para los análisis estadísticos; debe indicar claramente los filtros aplicados y no eliminar valores faltantes sin justificación. 
-```{r}
-
-```
+## Visualización de datos
 
