@@ -154,3 +154,85 @@ cat("Filas depuradas:", nrow(vuelos_limpios), "\n")
 
 ## Visualización de datos
 
+### Grafico 1
+```{r echo=FALSE}
+vuelos_mensuales <- vuelos_analisis %>%
+  group_by(month, origin) %>%
+  summarise(n_vuelos = n(), .groups = "drop")
+
+
+ggplot(vuelos_mensuales, aes(x = as.factor(month), y = n_vuelos, color = origin)) + 
+  geom_line(size = 1) +
+  geom_point() +
+  labs(title = "Vuelos mensuales por aeropuerto de origen",
+       x = "Mes", y = "Número de vuelos")
+  
+```
+
+### Grafico 2
+```{r echo=FALSE}
+vuelos_analisis %>%
+  group_by(dest) %>%
+  summarise(n_vuelos = n(), .groups = "drop") %>% 
+  arrange(desc(n_vuelos)) %>% 
+  slice(1:10) %>% 
+  ggplot( aes( x = dest, y = n_vuelos)) +
+  geom_col(fill = "cadetblue3") + 
+  coord_flip() + 
+  labs(title = "Top 10 destinos con mas vuelos",
+       x = "Destino", y = "Cantidad de vuelos")
+
+
+```
+
+
+### Grafico 3
+```{r echo=FALSE}
+boxplot(arr_delay~origin, data = vuelos_limpios,
+        main = " Retraso de llegada por aeropuerto de origen",
+        xlab = "Aeropuerto de origen",
+        ylab = "Retraso de llegada")
+```
+
+
+### Visualizacion 1 
+```{r echo=FALSE}
+  vuelos_limpios %>% 
+ggplot(aes( x = wind_speed, y = dep_delay )) +
+  geom_point(alpha = 0.6, color = "darkslategray") +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Velocidad del viento y retraso de salida",
+    x = "Velocidad del viento",
+    y = "Retraso de salida (minutos)"
+  ) +
+  theme_minimal()
+```
+Decidi usar la variable wind_speed() ya que las condiciones del viento pueden afectar
+el despegue y aterrizaje del avion
+
+### Visualizacion 2
+```{r echo=FALSE}
+vuelos_limpios %>% 
+ group_by(month) %>% 
+ summarise(tasa_cancelacion = mean(vuelos_limpios$cancelado)*100) %>% 
+ggplot(aes( x = month, y = tasa_cancelacion)) + 
+  geom_col( fill = "lightblue") +
+ labs(
+  title = "Tasa de cancelación por mes",
+   x = "Mes",
+   y = "Porcentaje de cancelación") +
+ theme_minimal()
+```
+
+## Estadística descriptiva
+
+1.  Calcular y presentar media, mediana, varianza y desviación estándar para la variable 
+arr_delay en los vuelos completados. 
+2.  Elaborar una tabla resumen por aerolínea que incluya, como mínimo, número de 
+vuelos, porcentaje de cancelación, media y mediana del retraso de llegada. 
+Interpretar las diferencias encontradas. 
+3.  Realizar una tabla de contingencia entre origin y cancelado, acompañada de 
+porcentajes que permitan comparar adecuadamente los aeropuertos. 
+4.  Seleccionar una tabla o visualización adicional que resuma un hallazgo relevante del
+proceso de integración con datos meteorológicos o de aeronaves. 
