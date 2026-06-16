@@ -77,8 +77,8 @@ resumen
 
 flights %>%
   summarise(
-    dep_time_na = sum(is.na(dep_time)),
-    dep_time_por = mean(is.na(dep_time)) * 100,
+    dep_time_na = sum(is.na(dep_time)),  #Datos faltantes
+    dep_time_por = mean(is.na(dep_time)) * 100, #Porcentaje de esos datos faltantes
     
     dep_delay_na = sum(is.na(dep_delay)),
     dep_delay_por = mean(is.na(dep_delay)) * 100,
@@ -97,7 +97,7 @@ flights %>%
 ### 5. Crear al menos las variables derivadas fecha, cancelado y retraso_llegada, donde un vuelo se considere retrasado cuando llegue con más de 15 minutos de retraso. Debe explicar cómo trató los valores faltantes.
 ```{r}
 #Fecha
-flights2 <- flights_100 %>%
+flights2 <- flights %>%
   mutate( fecha = as.Date( paste(year, month, day, sep = "-")
     ))
 
@@ -108,7 +108,7 @@ flights2 <- flights2 %>%
 #Retraso de llagada
 flights2 <- flights2 %>%
   mutate( retraso_llegada =  if_else(
-        arr_delay > 15, TRUE, FALSE, missing = NA))
+        arr_delay > 15, "Retrasado", "A tiempo", missing = NA))
 ```
 La variable fecha se construyó a partir de las variables year, month y day, las cuales no presentan valores faltantes. Para la variable cancelado, se consideró que un vuelo está cancelado cuando dep_time es NA. En la variable retraso_llegada, los vuelos con arr_delay > 15 se clasifican como retrasados. Cuando arr_delay es NA, el resultado se mantiene como NA debido a que no existe información suficiente para determinar si el vuelo llegó con retraso. Esto evita clasificar incorrectamente vuelos cancelados o con información incompleta.
 
@@ -138,25 +138,25 @@ sum(is.na(vuelos_analisis))
 
 colSums(is.na(vuelos_analisis))
 ```
-Hay un total de 313 datos faltantes lo que quiere decir que algunos vuelos no encontraron coincidencias al momento en que se hizo el left_join() como por ejemplo la columna de year.y o wind_gust. Las otras variables como speed ya tenian valores faltantes desde antes que se hiciera la union por lo que, lo mejor seria 
-eliminarla.
+Hay un total de 1081382 datos faltantes lo que quiere decir que algunos vuelos no encontraron coincidencias al momento en que se hizo el left_join() como por ejemplo la columna de year.y o wind_gust. Las otras variables como speed ya tenian valores faltantes desde antes que se hiciera la union por lo que, lo mejor seria eliminarla.
 
 
 ### Versión depurada de los datos 
 ```{r}
 vuelos_limpios <- vuelos_analisis %>% 
-  filter( !is.na(year.y), !is.na(wind_gust), !is.na(model), !is.na(engine), !is.na(engines), !is.na(type), !is.na(manufacturer)) %>% 
+  filter( !is.na(dep_delay), !is.na(arr_delay), !is.na(year.y)) %>% 
   select(-speed)
 
 cat("Filas originales:", nrow(vuelos_analisis), "\n")
 cat("Filas depuradas:", nrow(vuelos_limpios), "\n")
 ```
+Se construyó una versión depurada eliminando únicamente los registros con valores faltantes en las variables necesarias para el análisis de retrasos y condiciones meteorológicas. Esto permite conservar la mayor cantidad posible de observaciones sin introducir sesgos por la eliminación excesiva de datos.
 
 ## Visualización de datos
 
 ### Grafico 1
 ```{r echo=FALSE}
-vuelos_mensuales <- vuelos_analisis %>%
+vuelos_mensuales <- vuelos_limpios %>%
   group_by(month, origin) %>%
   summarise(n_vuelos = n(), .groups = "drop")
 
@@ -171,7 +171,7 @@ ggplot(vuelos_mensuales, aes(x = as.factor(month), y = n_vuelos, color = origin)
 
 ### Grafico 2
 ```{r echo=FALSE}
-vuelos_analisis %>%
+vuelos_limpios %>%
   group_by(dest) %>%
   summarise(n_vuelos = n(), .groups = "drop") %>% 
   arrange(desc(n_vuelos)) %>% 
@@ -195,7 +195,7 @@ boxplot(arr_delay~origin, data = vuelos_limpios,
 ```
 
 
-### Visualizacion 1 
+### Grafico 4
 ```{r echo=FALSE}
   vuelos_limpios %>% 
 ggplot(aes( x = wind_speed, y = dep_delay )) +
@@ -208,10 +208,9 @@ ggplot(aes( x = wind_speed, y = dep_delay )) +
   ) +
   theme_minimal()
 ```
-Decidi usar la variable wind_speed() ya que las condiciones del viento pueden afectar
-el despegue y aterrizaje del avion
+Decidi usar la variable wind_speed() ya que las condiciones del viento pueden afectar el despegue y aterrizaje del avion
 
-### Visualizacion 2
+### Grafico 5
 ```{r echo=FALSE}
 vuelos_limpios %>% 
  group_by(month) %>% 
