@@ -50,6 +50,7 @@ flights_100 <- flights %>%
   slice(1:100)
 
 head(flights_100,10)
+
 ```
 
 ### 3. Crear una tabla resumen con el número de filas, número de columnas y tipo general de variables de cada conjunto de datos.
@@ -117,6 +118,9 @@ La variable fecha se construyó a partir de las variables year, month y day, las
 ```{r}
 vuelos_analisis <- flights2 %>%
   left_join( airlines, by = "carrier")
+
+vuelos_analisis <- flights2 %>%
+  left_join( airports, by = c ("dest" = "faa"))
 
 vuelos_analisis <- vuelos_analisis %>% 
   left_join(weather, by = c("origin","year","month", "day", "hour"))
@@ -226,12 +230,91 @@ ggplot(aes( x = month, y = tasa_cancelacion)) +
 
 ## Estadística descriptiva
 
-1.  Calcular y presentar media, mediana, varianza y desviación estándar para la variable 
-arr_delay en los vuelos completados. 
-2.  Elaborar una tabla resumen por aerolínea que incluya, como mínimo, número de 
-vuelos, porcentaje de cancelación, media y mediana del retraso de llegada. 
-Interpretar las diferencias encontradas. 
-3.  Realizar una tabla de contingencia entre origin y cancelado, acompañada de 
+### 1.  Medidas para arr_delay
+```{r echo=FALSE, results='asis'}
+stats_arr <- vuelos_limpios %>%
+  summarise(
+    Media = round(mean(arr_delay), 2),
+    Mediana = median(arr_delay),
+    Varianza = round(var(arr_delay), 2),
+    Desv_Estandar = round(sd(arr_delay), 2),
+    N = n())
+
+
+knitr::kable(stats_arr, caption = "Estadísticas de arr_delay")
+```
+
+### 2. Tabla resumen por aerolínea  
+```{r echo=FALSE, results='asis', rows.print=10}
+tabla <- vuelos_analisis %>%
+  group_by(carrier, name) %>%
+  summarise(
+    vuelos = n(),
+    cancelacion_por = round(sum(cancelado) / n() * 100, 2),
+    media_retraso = round(mean(arr_delay, na.rm = TRUE), 2),
+    mediana_retraso = round(median(arr_delay, na.rm = TRUE), 2), .groups = "drop") %>%
+  arrange(desc(vuelos))
+
+knitr::kable(tabla, caption = "Resumen por aerolinea") 
+```
+
+**Interpretacion:** Los resultados muestran que algunos destinos concentran una mayor cantidad de vuelos, destacando Hartsfield Jackson Atlanta International y Charlotte Douglas International. En general, los porcentajes de cancelación son bajos, aunque algunos aeropuertos presentan valores superiores al promedio. Además, la mayoría de las medianas de retraso son negativas, lo que indica que más de la mitad de los vuelos llegaron puntualmente o antes de lo programado, aunque algunos retrasos elevados incrementan el promedio en ciertos destinos.
+
+### 3. Tabla de contingencia entre origin y cancelado, acompañada de 
 porcentajes que permitan comparar adecuadamente los aeropuertos. 
-4.  Seleccionar una tabla o visualización adicional que resuma un hallazgo relevante del
+```{r echo=FALSE, results='asis', rows.print=10}
+tabla1 <- 
+
+knitr::kable(tabla1, caption = "Porcentajes por aeropuerto")
+```
+
+### 4. Seleccionar una tabla o visualización adicional que resuma un hallazgo relevante del
 proceso de integración con datos meteorológicos o de aeronaves. 
+```{r echo=FALSE, results='asis', rows.print=10}
+vuelos_limpios %>% 
+  mutate(edad_avion = year.x - year.y) %>% 
+  ggplot(vuelos_limpios, aes(x = edad_avion, y = dep_delay)) +
+  geom_point(alpha = 0.2)+
+  geom_smooth(method = "lm")
+```
+**Hallazgo:**
+
+
+## Estadística inferencial
+
+### 1. Prueba t de una muestra
+
+$H_0: miu = 0$
+$H_A: miu ≠ 0$
+```{r}
+#Utilizace un nivel de significancia del 0.05
+alpha <- 0.05
+prueba_t <- 
+
+```
+**Conclusion:** Con un nivel de significancia de 0.05 ........
+
+
+### 2. Correlación de Pearson
+```{r}
+
+```
+
+
+
+### 3. Tamaño muestral y relevancia práctica
+```{r}
+
+```
+
+
+
+# Conclusiones:
+1
+2
+3
+4
+5
+
+
+# Limitaciones
