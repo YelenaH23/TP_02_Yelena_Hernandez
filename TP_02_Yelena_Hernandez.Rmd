@@ -154,7 +154,8 @@ vuelos_limpios <- vuelos_analisis %>%
 cat("Filas originales:", nrow(vuelos_analisis), "\n")
 cat("Filas depuradas:", nrow(vuelos_limpios), "\n")
 ```
-Se construyó una versión depurada eliminando únicamente los registros con valores faltantes en las variables necesarias para el análisis de retrasos y condiciones meteorológicas. Esto permite conservar la mayor cantidad posible de observaciones sin introducir sesgos por la eliminación excesiva de datos.
+Se construyó una base depurada para el análisis de retrasos eliminando los registros con valores faltantes en dep_delay y arr_delay, ya que sin estos datos no es posible calcular correctamente los retrasos de salida o llegada. 
+
 
 ## Visualización de datos
 
@@ -216,16 +217,19 @@ Decidi usar la variable wind_speed() ya que las condiciones del viento pueden af
 
 ### Grafico 5
 ```{r echo=FALSE}
-vuelos_limpios %>% 
- group_by(month) %>% 
- summarise(tasa_cancelacion = mean(vuelos_limpios$cancelado)*100) %>% 
-ggplot(aes( x = month, y = tasa_cancelacion)) + 
-  geom_col( fill = "lightblue") +
- labs(
-  title = "Tasa de cancelación por mes",
-   x = "Mes",
-   y = "Porcentaje de cancelación") +
- theme_minimal()
+flights2 %>% 
+  group_by(origin) %>% 
+  summarise(
+    tasa_cancelacion = mean(cancelado, na.rm = TRUE) * 100,
+    .groups = "drop") %>% 
+  ggplot(aes(x = origin, y = tasa_cancelacion)) + 
+  geom_col(fill = "lightblue") +
+  labs(
+    title = "Tasa de cancelación por aeropuerto de origen",
+    x = "Aeropuerto de origen",
+    y = "Porcentaje de cancelación"
+  ) +
+  theme_minimal()
 ```
 
 ## Estadística descriptiva
@@ -263,21 +267,34 @@ knitr::kable(tabla, caption = "Resumen por aerolinea")
 ### 3. Tabla de contingencia entre origin y cancelado, acompañada de 
 porcentajes que permitan comparar adecuadamente los aeropuertos. 
 ```{r echo=FALSE, results='asis', rows.print=10}
-tabla1 <- 
+tabla1 <- vuelos_analisis %>%
+  group_by(origin) %>%
+  summarise(
+    total_vuelos = n(),
+    vuelos_cancelados = sum(cancelado, na.rm = TRUE),
+    porcentaje_cancelados = round(vuelos_cancelados / total_vuelos * 100, 2),
+    .groups = "drop" )
 
-knitr::kable(tabla1, caption = "Porcentajes por aeropuerto")
+
+knitr::kable(tabla1, caption = "Porcentajes de vuelos cancelados por aeropuerto")
 ```
 
-### 4. Seleccionar una tabla o visualización adicional que resuma un hallazgo relevante del
-proceso de integración con datos meteorológicos o de aeronaves. 
+### 4. Seleccionar una tabla o visualización adicional que resuma un hallazgo relevante del proceso de integración con datos meteorológicos o de aeronaves.
 ```{r echo=FALSE, results='asis', rows.print=10}
-vuelos_limpios %>% 
-  mutate(edad_avion = year.x - year.y) %>% 
-  ggplot(vuelos_limpios, aes(x = edad_avion, y = dep_delay)) +
-  geom_point(alpha = 0.2)+
-  geom_smooth(method = "lm")
+vuelos_limpios_avion <- vuelos_limpios %>% 
+  mutate(edad_avion = year.x - year.y) 
+
+ggplot(vuelos_limpios_avion, aes(x = edad_avion, y = dep_delay)) +
+  geom_point(alpha = 0.8, color = "cyan3") +
+  geom_smooth(method = "lm", se = FALSE, color = "gold") +
+  labs(
+    title = "Edad del avión y retraso de salida",
+    x = "Edad del avión",
+    y = "Retraso de salida (minutos)"
+  ) +
+  theme_minimal()
 ```
-**Hallazgo:**
+**Hallazgo:** El gráfico muestra la relación entre la edad del avión y el retraso de salida, se ve que los puntos están bastante dispersos y no se observa un patrón claro que indique que los aviones más antiguos tengan mayores retrasos. La línea de tendencia es casi horizontal, lo que sugiere que la edad del avión no tiene una relación fuerte con el retraso de salida.
 
 
 ## Estadística inferencial
@@ -289,32 +306,63 @@ $H_A: miu ≠ 0$
 ```{r}
 #Utilizace un nivel de significancia del 0.05
 alpha <- 0.05
-prueba_t <- 
+prueba_t <- t.test(
+  na.omit(vuelos_analisis$arr_delay), mu = 0, alternative = "two.sided")
+
+prueba_t
 
 ```
-**Conclusion:** Con un nivel de significancia de 0.05 ........
+**Conclusion:** Con un nivel de significancia de 0.05, hay suficiente evidencia estadística para concluir que el retraso promedio de llegada es diferente de 0 minutos. En promedio, los vuelos presentan un retraso de 6.9 minutos.
 
 
 ### 2. Correlación de Pearson
 ```{r}
+datos_cor <- vuelos_limpios %>%
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+correlacion <- cor.test(datos_cor$dep_delay, datos_cor$arr_delay, method = "pearson")
+
+correlacion
+
+
+
 
 ```
-
+**Conclusion:** Con un nivel de significancia del 0.05 hay suficiente evidencia estadistica para decir que los vuelos que los vuelos que presentan mayores retrasos en la salida tienden también a presentar mayores retrasos en la llegada.
 
 
 ### 3. Tamaño muestral y relevancia práctica
 ```{r}
+cat("N prueba t:", nrow(vuelos_limpios), "\n")
+cat("N correlación:", nrow(datos_cor), "\n")
 
+#Error estandar
+n <- nrow(vuelos_limpios)
+desv_estandar <- sd(vuelos_limpios$arr_delay)
+ee <- desv_estandar/sqrt(n)
 ```
+**Interpretacion:** El conjunto de datos contiene 273853 vuelos completados,
+debido a que el conjunto de datos es muy grande, es esperable obtener valores p muy pequeños. En la prueba t, el retraso promedio de 6.9 minutos debe evaluarse en términos de su impacto real, en la correlación, el coeficiente de 0.9167 indica una relación muy fuerte, por lo que el resultado posee tanto significancia estadística como relevancia práctica.
 
 
+## Conclusiones de los graficos:
 
-# Conclusiones:
-1
-2
-3
-4
-5
+*1* El gráfico muestra la cantidad de vuelos por mes según el aeropuerto de origen, se observa que los tres aeropuertos mantienen un volumen relativamente alto durante todo el año, aunque existen variaciones entre meses. Esto indica que la actividad aérea no es completamente uniforme, sino que puede aumentar o disminuir según la temporada. Además, permite comparar qué aeropuerto concentra más vuelos en cada período.
+
+*2* El gráfico muestra los diez destinos con mayor cantidad de vuelos, los destinos LAX y ATL concentran una mayor parte del tráfico aéreo, lo que puede deberse a que son ciudades con alta demanda o aeropuertos principales. El grafico nos permite identificar las rutas más importantes dentro del conjunto de datos.
+
+*3* El diagrama de caja permite comparar la distribución de los retrasos de llegada según el aeropuerto de origen y en general, la mayoría de los vuelos se concentra cerca de valores bajos o negativos, lo que indica que muchos vuelos llegaron puntuales o incluso antes de lo previsto.
+También se observan muchos valores extremos, que corresponden a vuelos con retrasos muy altos.
+
+*4* El gráfico de dispersión muestra la relación entre la velocidad del viento y el retraso de salida y se puede visualizar una nube de puntos que se encuentra bastante dispersa, por lo que no parece existir una relación lineal fuerte entre ambas variables.
+
+*5*El gráfico muestra la tasa de cancelación de vuelos según el aeropuerto de origen, en el se observa qué porcentaje del total de vuelos de cada aeropuerto fue cancelado. Las barras más altas indican aeropuertos con mayor proporción de cancelaciones, mientras que las barras más bajas representan aeropuertos con menor proporción de vuelos cancelados. 
 
 
-# Limitaciones
+## Limitaciones
+
+- Mi mayor limitacion fue que los vuelos cancelados suelen tener valores faltantes en variables como dep_delay y arr_delay. Por esta razón, al crear una base depurada para analizar retrasos, se podían eliminar vuelos cancelados, lo cual impedía usar esa misma base para calcular correctamente la tasa de cancelación.
+
+- La presencia de valores faltantes en general, esto me obligó a tomar decisiones sobre qué registros conservar y cuáles eliminar según el tipo de análisis.
+
+- Algunas relaciones analizadas como por ejemplo la edad del avión con el retraso no mostraron patrones fuertes, esto limita la capacidad de sacar conclusiones causales.
